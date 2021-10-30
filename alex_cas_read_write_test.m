@@ -12,7 +12,7 @@ startup;
 
 %------HARD-CODED PARAMETER STUFF FOLLOWS----------------------------------
 % Experiment parameters -- BASIC
-expParameters.subjectID = 'Alex'; % Videos will save starting with this prefix
+expParameters.subjectID = 'Alex2'; % Videos will save starting with this prefix
 expParameters.aosloPPD = 545; % pixels per degree, adjust as needed
 expParameters.aosloFPS = 30; % MCW AOSLO frame rate, per MG
 
@@ -158,9 +158,50 @@ if MARsizePixels < 1 % Min pixel value
 elseif MARsizePixels > 25 % Max pixel value for MAR; actual E size will be 5x this
     MARsizePixels = 25;
 end
-% Make the E
-testE = ones(256,256); %imresize(basicE, MARsizePixels, 'nearest' );
 
+%% get shift 
+
+shiftE = zeros(128,256);
+
+% Save the E as a .bmp
+imwrite(shiftE, [expParameters.stimpath 'frame' num2str(frameIndex) '.bmp']);
+
+% Call Play Movie
+Parse_Load_Buffers(0);
+Mov.msg = ['Letter size (pixels)']; 
+setappdata(hAomControl, 'Mov',Mov);
+VideoParams.vidname = [expParameters.subjectID '_SHIFT'];
+PlayMovie;
+pause(3);
+TerminateExp;
+
+datfile = [ rootFolder,'\', VideoParams.vidname, '.avi'];
+hvid = VideoReader(datfile);
+vidmat  = squeeze(hvid.read());
+
+shiftE_back = -mean(vidmat,3)+256;
+
+C = xcorr2(shiftE_back, shiftE+1);
+
+[~,I] = max(C(:));
+[Ir,Ic] = ind2sub(size(C),I);
+
+% max index is relative to xcorr output, need it relative to avi indexes
+%https://www.mathworks.com/help/signal/ref/xcorr2.html
+
+
+%% Run trials
+% testE = diag(linspace(0,1,128))*ones(128,256); %imresize(basicE, MARsizePixels, 'nearest' );
+testE = ones(128,256);
+
+% rows: 130:382
+% cols: 127:383
+top = 256-64
+bottom = top + 128 -1
+left = 128
+right = 128 + 256 - 1
+
+Etests = {};
 for i = 1:5
     % Save the E as a .bmp
     imwrite(testE, [expParameters.stimpath 'frame' num2str(frameIndex) '.bmp']);
@@ -179,13 +220,26 @@ for i = 1:5
     vidmat  = squeeze(hvid.read());
     
     testE = mean(vidmat,3);
-    testE = testE(128:(128+255),186:(186+255))/256.0;
+    testE = testE(top:bottom, left:right)/256.0;
+    Etests{i} = testE;
     
+    figure;
+    imagesc(testE)
     
     % Terminate experiment
     Beeper(400, 0.5, 0.15); WaitSecs(0.15); Beeper(400, 0.5, 0.15);  WaitSecs(0.15); Beeper(400, 0.5, 0.15);
 
 end
+
+
+figure(1);
+for i=1:5
+    subplot(2,3,i)
+    imagesc(Etests{i})
+    axis equal;
+end
+
+
 Speak('Experiment complete');
 
 
