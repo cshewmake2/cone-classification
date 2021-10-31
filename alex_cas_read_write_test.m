@@ -161,7 +161,12 @@ end
 
 %% get shift 
 
+% make stimulus
 shiftE = zeros(128,256);
+
+% make centered template stim zero padded to 512x512
+templateE = zeros(512,512);
+templateE(192:(192+127),128:(128+255)) = 1;
 
 % Save the E as a .bmp
 imwrite(shiftE, [expParameters.stimpath 'frame' num2str(frameIndex) '.bmp']);
@@ -175,31 +180,43 @@ PlayMovie;
 pause(3);
 TerminateExp;
 
+% load recorded video
 datfile = [ rootFolder,'\', VideoParams.vidname, '.avi'];
 hvid = VideoReader(datfile);
 vidmat  = squeeze(hvid.read());
-
 shiftE_back = -mean(vidmat,3)+256;
 
-C = xcorr2(shiftE_back, shiftE+1);
+% compute xcorr
+templateEF = fft2(templateE);
+shiftE_backF = fft2(shiftE_back);
+cc = ifft2(templateEF.*conj(shiftE_backF));
 
-[~,I] = max(C(:));
-[Ir,Ic] = ind2sub(size(C),I);
+% find offsets
+[max_cc, imax] = max(abs(cc(:)));
+[yoffset, xoffset] = ind2sub(size(cc),imax);
+yoffset = yoffset - 1;
+xoffset = xoffset - 1;
+if yoffset>512/2; yoffset = yoffset-512; end
+if xoffset>512/2; xoffset = xoffset-512; end
+offsetEstimate = [yoffset, xoffset];
 
-% max index is relative to xcorr output, need it relative to avi indexes
-%https://www.mathworks.com/help/signal/ref/xcorr2.html
+% plot recorded video corrected for shift
+figure(2)
+subplot(1,2,1)
+imagesc(templateE)
+title('original')
+colormap gray
+
+axis equal
+subplot(1,2,2)
+imagesc(circshift(shiftE_back,-offsetEstimate))
+title ('corrected')
+axis equal
 
 
 %% Run trials
 % testE = diag(linspace(0,1,128))*ones(128,256); %imresize(basicE, MARsizePixels, 'nearest' );
 testE = ones(128,256);
-
-% rows: 130:382
-% cols: 127:383
-top = 256-64
-bottom = top + 128 -1
-left = 128
-right = 128 + 256 - 1
 
 Etests = {};
 for i = 1:5
@@ -214,17 +231,19 @@ for i = 1:5
     PlayMovie;
     pause(3);
     TerminateExp;
-    
+    % load movie back
     datfile = [ rootFolder,'\', VideoParams.vidname, '.avi'];
     hvid = VideoReader(datfile);
     vidmat  = squeeze(hvid.read());
     
+    % construct next stimulus
     testE = mean(vidmat,3);
-    testE = testE(top:bottom, left:right)/256.0;
+    testE = circshift(shiftE_back/256.0,-offsetEstimate);
+    testE = testE(192:(192+127),128:(128+255));
     Etests{i} = testE;
-    
-    figure;
-    imagesc(testE)
+
+%     figure;
+%     imagesc(testE)
     
     % Terminate experiment
     Beeper(400, 0.5, 0.15); WaitSecs(0.15); Beeper(400, 0.5, 0.15);  WaitSecs(0.15); Beeper(400, 0.5, 0.15);
@@ -241,7 +260,6 @@ end
 
 
 Speak('Experiment complete');
-
 
 
 function startup
