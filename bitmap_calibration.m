@@ -1,4 +1,4 @@
-function alex_cas_read_write_test
+function cas_read_write_test
 %% Visual acuity experiment for AOMcontrol
 
 global SYSPARAMS StimParams VideoParams;
@@ -162,96 +162,97 @@ end
 
 
 
-%% estimate the shift
-% make centered template stim zero padded to 512x512
-aom0locx = zeros(size(aom0seq)); 
-%aom0locy = zeros(size(aom0seq));
-Mov.aom0locx = aom0locx; 
-Mov.aom0locy = aom0locy;
-
-templateE = zeros(512,512);
-templateE(192:(192+127),128:(128+255)) = 1;
-
-% define stim
-shiftE = zeros(128,256);
-imwrite(shiftE, [expParameters.stimpath 'frame' num2str(frameIndex) '.bmp']);
-
-% Call Play Movie
-Parse_Load_Buffers(0);
-Mov.msg = ['Letter size (pixels)']; 
-setappdata(hAomControl, 'Mov',Mov);
-VideoParams.vidname = [expParameters.subjectID '_SHIFT'];
-PlayMovie;
-pause(3);
-TerminateExp;
-
-% load recorded video
-datfile = [ rootFolder,'\', VideoParams.vidname, '.avi'];
-hvid = VideoReader(datfile);
-vidmat  = squeeze(hvid.read());
-shiftE_back = -mean(vidmat,3)+256;
-
-figure(1)
-imagesc(templateE*256+shiftE_back)
-
-% compute xcorr
-templateEF = fft2(templateE);
-shiftE_backF = fft2(shiftE_back);
-cc = ifft2(templateEF.*conj(shiftE_backF));
-
-% find offsets
-[max_cc, imax] = max(abs(cc(:)));
-[yoffset, xoffset] = ind2sub(size(cc),imax);
-yoffset = yoffset - 1;
-xoffset = xoffset - 1;
-if yoffset>512/2; yoffset = yoffset-512; end
-if xoffset>512/2; xoffset = xoffset-512; end
-offsetEstimate = [yoffset, xoffset];
-
-fprintf('X-offset %d   -   Y-offset %d \n',xoffset, yoffset)
-aom0locx = xoffset+zeros(size(aom0seq)); 
-aom0locy = yoffset+zeros(size(aom0seq));
-Mov.aom0locx = aom0locx; 
-Mov.aom0locy = aom0locy;
-
-templateE = zeros(512,512);
-templateE(192:(192+127),128:(128+255)) = 1;
-
-% define stim
-shiftE = zeros(128,256);
-imwrite(shiftE, [expParameters.stimpath 'frame' num2str(frameIndex) '.bmp']);
-
-% Call Play Movie
-Parse_Load_Buffers(0);
-Mov.msg = ['Letter size (pixels)']; 
-setappdata(hAomControl, 'Mov',Mov);
-VideoParams.vidname = [expParameters.subjectID '_SHIFT'];
-PlayMovie;
-pause(3);
-TerminateExp;
-
-% load recorded video
-datfile = [ rootFolder,'\', VideoParams.vidname, '.avi'];
-hvid = VideoReader(datfile);
-vidmat  = squeeze(hvid.read());
-shiftE_back = -mean(vidmat,3)+256;
-
-figure(2)
-imagesc(templateE*256+shiftE_back)
-pause
+% %% estimate the shift
+% % make centered template stim zero padded to 512x512
+% aom0locx = zeros(size(aom0seq)); 
+% %aom0locy = zeros(size(aom0seq));
+% Mov.aom0locx = aom0locx; 
+% Mov.aom0locy = aom0locy;
+% 
+% templateE = zeros(512,512);
+% % templateE(192:(192+127),128:(128+255)) = 1;
+% 
+% % define stim
+% shiftE = zeros(128,256);
+% imwrite(shiftE, [expParameters.stimpath 'frame' num2str(frameIndex) '.bmp']);
+% 
+% % Call Play Movie
+% Parse_Load_Buffers(0);
+% Mov.msg = ['Letter size (pixels)']; 
+% setappdata(hAomControl, 'Mov',Mov);
+% VideoParams.vidname = [expParameters.subjectID '_SHIFT'];
+% PlayMovie;
+% pause(3);
+% TerminateExp;
+% 
+% % load recorded video
+% datfile = [ rootFolder,'\', VideoParams.vidname, '.avi'];
+% hvid = VideoReader(datfile);
+% vidmat  = squeeze(hvid.read());
+% shiftE_back = -mean(vidmat,3)+256;
+% 
+% figure(1)
+% imagesc(templateE*256+shiftE_back)
+% 
+% % compute xcorr
+% templateEF = fft2(templateE);
+% shiftE_backF = fft2(shiftE_back);
+% cc = ifft2(templateEF.*conj(shiftE_backF));
+% 
+% % find offsets
+% [max_cc, imax] = max(abs(cc(:)));
+% [yoffset, xoffset] = ind2sub(size(cc),imax);
+% yoffset = yoffset - 1;
+% xoffset = xoffset - 1;
+% if yoffset>512/2; yoffset = yoffset-512; end
+% if xoffset>512/2; xoffset = xoffset-512; end
+% offsetEstimate = [yoffset, xoffset];
+% 
+% fprintf('X-offset %d   -   Y-offset %d \n',xoffset, yoffset)
+% aom0locx = xoffset+zeros(size(aom0seq)); 
+% aom0locy = yoffset+zeros(size(aom0seq));
+% Mov.aom0locx = aom0locx; 
+% Mov.aom0locy = aom0locy;
+% 
+% templateE = zeros(512,512);
+% templateE(192:(192+127),128:(128+255)) = 1;
+% 
+% % define stim
+% shiftE = zeros(128,256);
+% imwrite(shiftE, [expParameters.stimpath 'frame' num2str(frameIndex) '.bmp']);
+% 
+% % Call Play Movie
+% Parse_Load_Buffers(0);
+% Mov.msg = ['Letter size (pixels)']; 
+% setappdata(hAomControl, 'Mov',Mov);
+% VideoParams.vidname = [expParameters.subjectID '_SHIFT'];
+% PlayMovie;
+% pause(3);
+% TerminateExp;
+% 
+% % load recorded video
+% datfile = [ rootFolder,'\', VideoParams.vidname, '.avi'];
+% hvid = VideoReader(datfile);
+% vidmat  = squeeze(hvid.read());
+% shiftE_back = -mean(vidmat,3)+256;
+% 
+% figure(2)
+% imagesc(templateE*256+shiftE_back)
+% pause
 
 
 %% Run trials
 % testE = diag(linspace(0,1,128))*ones(128,256); %imresize(basicE, MARsizePixels, 'nearest' );
 
-testE = ones(128,256);
+testE_template = ones(128,256);
 Etests = {};
 
 xoff = [];
 yoff = [];
-for i = 1:5
+n_increments = 128;
+for i = 1:(n_increments+1)
     %% run trial  
-   
+    testE = testE_template*(i-1)/n_increments;
     % Save the E as a .bmp
     imwrite(testE, [expParameters.stimpath 'frame' num2str(frameIndex) '.bmp']);
 
@@ -263,37 +264,21 @@ for i = 1:5
     PlayMovie;
     pause(4);
     TerminateExp;
-    % load movie back
-    datfile = [ rootFolder,'\', VideoParams.vidname, '.avi'];
-    hvid = VideoReader(datfile);
-    vidmat  = squeeze(hvid.read());
-    
-    % construct next stimulus
-    testE = mean(vidmat,3)/256.0;
-    %testE = circshift(testE,-offsetEstimate);
-    testE = testE(192:(192+127),128:(128+255));
-    testE(testE >(1-1e-10)) = 1-1e-10;
-    testE(testE <(-1e-10)) = -1e-10;
     Etests{i} = testE;
 
-%     figure;
-%     imagesc(testE)
     
     % Terminate experiment
     Beeper(400, 0.5, 0.15); WaitSecs(0.15); Beeper(400, 0.5, 0.15);  WaitSecs(0.15); Beeper(400, 0.5, 0.15);
-    aom0locx = xoffset+aom0locx; 
-    aom0locy = yoffset+aom0locy;
-    Mov.aom0locx = aom0locx; 
-    Mov.aom0locy = aom0locy;
+
 end
 
-
-figure(9);
-for i=1:5
-    subplot(2,3,i)
-    imagesc(Etests{i})
-    axis equal;
-end
+% 
+% figure(9);
+% for i=1:5
+%     subplot(2,3,i)
+%     imagesc(Etests{i})
+%     axis equal;
+% end
 
 
 Speak('Experiment complete');
