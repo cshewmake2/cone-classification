@@ -1,5 +1,5 @@
 import numpy as np
-import cone
+from cone import *
 
 
 def estimate_a_scatter(duration, a_scatter, a_cone, Iin, mu_m, sigma_m):
@@ -40,7 +40,7 @@ def estimate_a_scatter(duration, a_scatter, a_cone, Iin, mu_m, sigma_m):
         
         # noise/scatter model
         nfl_noise = np.random.normal(loc=mu_m,scale=sigma_m)
-        Iout_ti = cone.compute_reflected_light(Iin,            \
+        Iout_ti = compute_reflected_light(Iin,                 \
                                           a_cone,              \
                                           pt,                  \
                                           a_scatter=a_scatter, \
@@ -92,18 +92,18 @@ def simulate(**kwargs):
         residiual between a_scatter and estimate
     '''
     # set defaults 
-    a_cone=kwargs.pop('a_cone',0.1)
-    account_for_a_scatter=kwargs.pop('account_for_a_scatter',False)
-    update_rate=kwargs.pop('update_rate',0.1)
-    dt=kwargs.pop('dt',0.001)
-    n_seconds=kwargs.pop('n_seconds',6)
-    scatter_est_duration=kwargs.pop('scatter_est_duration',5)
-    p0=kwargs.pop('p0',1.)
-    Qe=kwargs.pop('Qe',3e6)
-    mu_m=kwargs.pop('mu_m',250)
-    sigma_m=kwargs.pop('sigma_m',500)
-    Iin_0=kwargs.pop('Iin_0',4e4)
-    a_scatter_bounds=kwargs.pop('a_scatter_bounds',(1,1))
+    a_cone = kwargs.pop('a_cone',0.1)
+    account_for_a_scatter = kwargs.pop('account_for_a_scatter',False)
+    update_rate = kwargs.pop('update_rate',0.1)
+    dt = kwargs.pop('dt',0.001)
+    n_seconds = kwargs.pop('n_seconds',6)
+    scatter_est_duration = kwargs.pop('scatter_est_duration',5)
+    p0 = kwargs.pop('p0',1.)
+    Qe = kwargs.pop('Qe',3e6)
+    mu_m = kwargs.pop('mu_m',250)
+    sigma_m = kwargs.pop('sigma_m',500)
+    Iin_0 = kwargs.pop('Iin_0',4e4)
+    a_scatter_bounds = kwargs.pop('a_scatter_bounds',(1,1))
     
     
     a_scatter = np.random.uniform(low=a_scatter_bounds[0], high=a_scatter_bounds[1])
@@ -134,14 +134,14 @@ def simulate(**kwargs):
     updatei = 0
     for i, ti in enumerate(t):
         # update photopigment concentration
-        p_grad = cone.dpdt(Iin[i], Qe, pt[i])
+        p_grad = dpdt(Iin=Iin[i], Qe=Qe, p_conc=pt[i])
         p_ti += p_grad * dt
         pt.append(p_ti)
 
         # noise/scatter model
         nfl_noise = np.random.normal(loc=mu_m,scale=sigma_m)
 
-        Iout_ti = cone.compute_reflected_light(Iin[i],         \
+        Iout_ti = compute_reflected_light(Iin[i],              \
                                           a_cone,              \
                                           p_ti,                \
                                           a_scatter=a_scatter, \
