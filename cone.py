@@ -23,19 +23,26 @@ def compute_reflected_light(Iin, a_cone, p_conc, a_scatter=1):
     return a_scatter * Iin * attenuation
 
 
-def dpdt(Iin, Qe, p_conc, t0=120):
+def dpdt(Iin, a_cone, Qe, p_conc, t0=120):
     """
     Compute the derivative of the pigment concentration at a given state.
     Parameters
     ----------
     Iin : scalar (1,)
         Input image intensity at a given time
+    a_cone: scalar (1,)
+        Absorption fraction for the cone at a given wavelength
     Qe : scalar (1,)
         Time constant in units of td-sec
     p_conc : scalar (1,)
         Concentration of photopigment at a given time
+        
+    Returns
+    -------
+    dpdt: scalar (1,)
+        Derivative of pigment concentration for the given parameters
     """
-    return (-Iin * p_conc / Qe) + ((1 - p_conc) / t0)
+    return (-Iin * a_cone * p_conc / Qe) + ((1 - p_conc) / t0)
 
 
 class cone():

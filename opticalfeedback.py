@@ -37,14 +37,9 @@ def estimate_a_scatter(duration, a_scatter, a_cone, Iin, mu_m, sigma_m):
     
 
     for i, ti in enumerate(t):
-        
         # noise/scatter model
         nfl_noise = np.random.normal(loc=mu_m,scale=sigma_m)
-        Iout_ti = compute_reflected_light(Iin,                 \
-                                          a_cone,              \
-                                          pt,                  \
-                                          a_scatter=a_scatter, \
-                                         ) + nfl_noise
+        Iout_ti = compute_reflected_light(Iin,a_cone, pt, a_scatter=a_scatter) + nfl_noise
         Iout.append(Iout_ti)
     return np.mean((np.asarray(Iout)-mu_m)/Iin)
 
@@ -96,7 +91,7 @@ def simulate(**kwargs):
     account_for_a_scatter = kwargs.pop('account_for_a_scatter',False)
     update_rate = kwargs.pop('update_rate',0.1)
     dt = kwargs.pop('dt',0.001)
-    n_seconds = kwargs.pop('n_seconds',6)
+    n_seconds = kwargs.pop('n_seconds',20)
     scatter_est_duration = kwargs.pop('scatter_est_duration',5)
     p0 = kwargs.pop('p0',1.)
     Qe = kwargs.pop('Qe',3e6)
@@ -120,45 +115,44 @@ def simulate(**kwargs):
     # estimate a_scatter
     a_scatter_residual = 9e9
     if account_for_a_scatter:
-        a_scatter_est = estimate_a_scatter(duration=scatter_est_duration, \
-                                             a_scatter=a_scatter,         \
-                                             a_cone=a_cone,               \
-                                             Iin=Iin_0,                   \
-                                             mu_m=mu_m,                   \
-                                             sigma_m=sigma_m              \
+        a_scatter_est = estimate_a_scatter(duration=scatter_est_duration,
+                                           a_scatter=a_scatter,
+                                           a_cone=a_cone,
+                                           Iin=Iin_0,
+                                           mu_m=mu_m,
+                                           sigma_m=sigma_m
                                           )
     
         a_scatter_residual = np.abs(a_scatter_est-a_scatter)
         # print('abs difference between known and estimated intrinsic reflectance: %.4e' % (a_intrins_residual))
 
-    updatei = 0
+    stim_index = 0
+    update_indices = [0]
     for i, ti in enumerate(t):
         # update photopigment concentration
-        p_grad = dpdt(Iin=Iin[i], Qe=Qe, p_conc=pt[i])
+        p_grad = dpdt(Iin=Iin[i], a_cone=a_cone, Qe=Qe, p_conc=pt[i])
         p_ti += p_grad * dt
         pt.append(p_ti)
 
         # noise/scatter model
         nfl_noise = np.random.normal(loc=mu_m,scale=sigma_m)
 
-        Iout_ti = compute_reflected_light(Iin[i],              \
-                                          a_cone,              \
-                                          p_ti,                \
-                                          a_scatter=a_scatter, \
-                                         ) + nfl_noise
+        Iout_ti = compute_reflected_light(Iin[i], a_cone, p_ti, a_scatter=a_scatter) + nfl_noise
         Iout.append(Iout_ti)
 
         # check if its time to update Iin
-        if updatei < update_t.size and 0 <= (ti-update_t[updatei]) < dt:
+        if stim_index < update_t.size and 0 <= (ti-update_t[stim_index]) < dt:
             # update input image from output image
+            Iout_mean = np.mean(np.clip(Iout[update_indices[-1]:i],0,Iin_0))
             if account_for_a_scatter:
-                Iout_corrected = (Iout[i]-mu_m)/a_scatter_est
-                Iin.append(np.clip(Iout_corrected, 0, 40000))
+                Iout_corrected = (Iout_mean-mu_m)/a_scatter_est
+                Iin.append(np.clip(Iout_corrected, 0, Iin_0))
             else:
-                Iin.append(np.clip(Iout[i], 0, 40000))
-            updatei = updatei+1
+                Iin.append(Iout_mean)
+            update_indices.append(i)
+            stim_index = stim_index+1
         else:
             # duplicate the previous Iin
             Iin.append(Iin[i])
 
-    return np.asarray(Iin), np.asarray(Iout), np.asarray(pt), t, a_scatter_residual
+    return np.asarray(Iin), np.asarray(Iout), np.asarray(pt), t, a_scatter_residual, update_indices
